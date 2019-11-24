@@ -1,7 +1,5 @@
-#include <iostream>
-#include <sstream>
-#include <string>
 #include "shared_ptr_wrapper.h"
+#include "my_backtrace.h"
 
 typedef SmartPointerWrapper< class Foo > Foop;
 
@@ -79,4 +77,7 @@ int main (void)
 
     std::cout << "\nend of main, expect auto destruct" << std::endl;
     std::cout << "=================================" << std::endl;
+
+    auto tb = new Traceback();
+    std::cout << tb->to_string();
 }

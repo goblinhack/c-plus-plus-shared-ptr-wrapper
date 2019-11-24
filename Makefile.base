@@ -1,7 +1,7 @@
 NAME=shared_ptr_wrapper
 OBJDIR=.o
 
-TARGET_OBJECTS=$(OBJDIR)/shared_ptr_wrapper.o
+TARGET_OBJECTS=$(OBJDIR)/shared_ptr_wrapper.o $(OBJDIR)/backtrace.o
 
 EXTRA_CFLAGS=-std=c++11
 
