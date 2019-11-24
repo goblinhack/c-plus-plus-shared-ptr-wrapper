@@ -1,8 +1,8 @@
 Simple C++ 11 wrapper for std::shared_ptr
 =========================================
 
-Do you want to wrap shared_ptr so you can add debugging or anything else
-you want on top (perhaps to help debug leaks) - of course you do! e.g.:
+Do you want to wrap shared_ptr so you can add data to help with debugging?
+- of course you do! e.g.:
 
 <pre>
 //
