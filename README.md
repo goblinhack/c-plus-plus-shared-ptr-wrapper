@@ -5,8 +5,8 @@ Do you want to wrap shared_ptr so you can add debugging or anything else
 you want on top (perhaps to help debug leaks) - of course you do! e.g.:
 
 <pre>
-#include <iostream>
-#include <string>
+#include \<iostream\>
+#include \<string\>
 #include "shared_ptr_wrapper.h"
 
 typedef SmartPointerWrapper< class Bar > Barp;
