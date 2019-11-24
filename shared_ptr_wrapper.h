@@ -1,6 +1,7 @@
 #ifndef MY_SHARED_PTR
 #define MY_SHARED_PTR
 #include <memory>
+#include <sstream>
 #include <string>
 #include <iostream>
 #define DEBUG
@@ -13,9 +14,19 @@ private:
 
     void debug (const std::string &what) {
 #ifdef DEBUG
-        std::cout << what << " SmartPointerWrapper(" << this << ", " << 
-                     name << ")" << std::endl;
+        std::cout << what << " " << to_string() << std::endl;
 #endif
+    }
+
+    std::string to_string (void) {
+        auto address = static_cast<const void*>(this);
+        std::stringstream ss;
+        ss << address;
+        if (sptr) {
+            return "SmartPointerWrapper(" + ss.str() + "," + sptr->to_string() + ")";
+        } else {
+            return "SmartPointerWrapper(" + ss.str() + ")";
+        }
     }
 public:
     // explicit means constructor must match exactly
