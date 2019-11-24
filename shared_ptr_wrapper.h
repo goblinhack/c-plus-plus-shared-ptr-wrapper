@@ -2,71 +2,57 @@
 #define MY_SHARED_PTR
 #include <memory>
 #include <string>
+#include <iostream>
+#define DEBUG
 //#include "my_ptrcheck.h"
 
 template <typename T> class SmartPointerWrapper {
 private:
     std::shared_ptr<T> sptr;
-    std::string name;
+    std::string name {"nullptr"};
+
+    void debug (const std::string &what) {
+#ifdef DEBUG
+        std::cout << what << " SmartPointerWrapper(" << this << ", " << 
+                     name << ")" << std::endl;
+#endif
+    }
 public:
     // explicit means constructor must match exactly
-    template <typename ...ARGS> explicit SmartPointerWrapper(const char *name, ARGS... a) { 
-        this->name = name;
+    template <typename ...ARGS> explicit 
+      SmartPointerWrapper(const std::string &name, ARGS... a) : name(name) { 
         sptr = std::make_shared<T>(a...);
+        debug("make_shared");
         //newptr(this, this->name.c_str());
     }
 
-    template <typename ...ARGS> explicit SmartPointerWrapper(ARGS... a) { 
-        this->name = "<unnamed>";
-        sptr = std::make_shared<T>(a...);
-        //newptr(this, this->name.c_str());
-    }
-
-    explicit SmartPointerWrapper(const char *name) { 
-        this->name = name;
+    explicit SmartPointerWrapper(const std::string &name) : name(name) { 
         sptr = std::make_shared<T>();
+        debug("make_shared");
         //newptr(this, this->name.c_str());
     }
 
-    explicit SmartPointerWrapper(void) { 
-        this->name = "<unnamed>";
-        sptr = std::make_shared<T>();
+    explicit SmartPointerWrapper(void) {
+        debug("init");
         //newptr(this, this->name.c_str());
     }
 
-    explicit SmartPointerWrapper (std::shared_ptr<T> obj) {
-        sptr = obj;
-    }
-
-    // a destructor should not throw an exception
     ~SmartPointerWrapper() {
         //oldptr(this);
+        debug("delete");
     }
 
-    operator std::shared_ptr<T>() {
-        return *sptr;
-    }
-
-    void reset() {
-        sptr.reset();
-    }
-
-    T& operator*() { return *sptr; }
-
-    const T& operator*() const { return *sptr; }
-
-    T* const operator->() { return sptr.operator->(); }
-
-    const T* const operator->() const { return sptr.operator->(); }
-
-    T* get() const { return sptr.get(); }
-
-    operator bool() const { return (bool)sptr; }
-
-    void rename(std::string &name) { 
+    void rename(const std::string &name) { 
         this->name = name;
         //oldptr(this);
         //newptr(this, this->name.c_str());
     }
+
+    T* const operator->() { return sptr.operator->(); }
+    T* get() const { return sptr.get(); }
+    T& operator*() { return *sptr; }
+    const T& operator*() const { return *sptr; }
+    operator bool() const { return (bool)sptr; }
+    void reset() { sptr.reset(); }
 };
 #endif
