@@ -14,18 +14,10 @@ you want on top (perhaps to help debug leaks) - of course you do! e.g.:
 typedef SmartPointerWrapper< class Bar > Barp;
 
 class Bar {
-private:
-    void debug (const std::string &what) {
-        std::cout << what << " Bar(" << this << ")" << std::endl;
-    }
 public:
     Barp other;
-    Bar(void) {
-        debug("new");
-    }
-    ~Bar() {
-        debug("delete");
-    }
+    Bar(void) { }
+    ~Bar() { }
 };
 
 int main (void)
