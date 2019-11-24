@@ -80,9 +80,8 @@ Do
 Or, if that fails, manual build:
 
 <pre>
-    c++ -std=c++11 -Werror -g -ggdb3 -O2 -Wall -Wall -c -o .o/main.o main.cpp
     c++ -std=c++11 -Werror -g -ggdb3 -O2 -Wall -Wall -c -o .o/shared_ptr_wrapper.o shared_ptr_wrapper.cpp
-    c++ -std=c++11 -Werror -g -ggdb3 -O2 -Wall -Wall -c -o .o/vector_bounds_check.o vector_bounds_check.cpp
+    c++ .o/shared_ptr_wrapper.o  -o shared_ptr_wrapper
 </pre>
 
 To test:
