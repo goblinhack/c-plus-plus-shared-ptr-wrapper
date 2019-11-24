@@ -44,6 +44,7 @@ public:
 
     void rename(const std::string &name) { 
         this->name = name;
+        debug("rename");
         //oldptr(this);
         //newptr(this, this->name.c_str());
     }
@@ -53,6 +54,10 @@ public:
     T& operator*() { return *sptr; }
     const T& operator*() const { return *sptr; }
     operator bool() const { return (bool)sptr; }
-    void reset() { sptr.reset(); }
+
+    void reset() { 
+        debug("reset");
+        sptr.reset(); 
+    }
 };
 #endif

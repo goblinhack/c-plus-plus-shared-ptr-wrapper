@@ -44,21 +44,36 @@ int main (void)
 }
 </pre>
 
-output:
+output (with some extra debugs):
 
 <pre>
-init SmartPointerWrapper(0x7fdc48c029f8, nullptr)
-new Bar(0x7fdc48c029f8)
-make_shared SmartPointerWrapper(0x7ffee51dd6d8, bar1)
-init SmartPointerWrapper(0x7fdc48c02a38, nullptr)
-new Bar(0x7fdc48c02a38)
-make_shared SmartPointerWrapper(0x7ffee51dd700, bar2)
-delete SmartPointerWrapper(0x7ffee51dd700, bar2)
-delete Bar(0x7fdc48c02a38)
-delete SmartPointerWrapper(0x7fdc48c02a38, ref to bar1)
-delete SmartPointerWrapper(0x7ffee51dd6d8, bar1)
-delete Bar(0x7fdc48c029f8)
-delete SmartPointerWrapper(0x7fdc48c029f8, ref to bar2)
+    create classes
+    ==============
+    init SmartPointerWrapper(0x7f9a29c029f8, nullptr)
+    new Bar(0x7f9a29c029f8)
+    make_shared SmartPointerWrapper(0x7ffeea9f16b8, bar1)
+    init SmartPointerWrapper(0x7f9a29c02a38, nullptr)
+    new Bar(0x7f9a29c02a38)
+    make_shared SmartPointerWrapper(0x7ffeea9f16e0, bar2)
+
+    create reference loop
+    =====================
+    rename SmartPointerWrapper(0x7f9a29c029f8, ref to bar2)
+    rename SmartPointerWrapper(0x7f9a29c02a38, ref to bar1)
+
+    remove reference loop
+    =====================
+    reset SmartPointerWrapper(0x7f9a29c029f8, ref to bar2)
+    reset SmartPointerWrapper(0x7f9a29c02a38, ref to bar1)
+
+    end of main, expect auto destruct
+    =================================
+    delete SmartPointerWrapper(0x7ffeea9f16e0, bar2)
+    delete Bar(0x7f9a29c02a38)
+    delete SmartPointerWrapper(0x7f9a29c02a38, ref to bar1)
+    delete SmartPointerWrapper(0x7ffeea9f16b8, bar1)
+    delete Bar(0x7f9a29c029f8)
+    delete SmartPointerWrapper(0x7f9a29c029f8, ref to bar2)
 </pre>
 
 Building
