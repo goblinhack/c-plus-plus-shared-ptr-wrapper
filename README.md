@@ -5,8 +5,10 @@ Do you want to wrap shared_ptr so you can add debugging or anything else
 you want on top (perhaps to help debug leaks) - of course you do! e.g.:
 
 <pre>
-#include \<iostream\>
-#include \<string\>
+//
+// Create two classes that refer to each other. Once the references are
+// reset, the classes should be auto destructed.
+//
 #include "shared_ptr_wrapper.h"
 
 typedef SmartPointerWrapper< class Bar > Barp;
