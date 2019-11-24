@@ -87,5 +87,5 @@ Or, if that fails, manual build:
 To test:
 
 <pre>
-    ./bounds_check
+    ./shared_ptr_wrapper
 </pre>
