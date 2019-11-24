@@ -1,8 +1,7 @@
-/*
- * Copyright goblinhack@gmail.com
- * See the README file for license info.
- */
-#include "my_backtrace.h"
+//
+// Copyright goblinhack@gmail.com
+//
+#include "my_traceback.h"
 #include "my_sprintf.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +9,7 @@
 #include <execinfo.h>
 #include <cxxabi.h>
 
-Traceback::Traceback (void) {
+void Traceback::init (void) {
 #ifndef WIN32
     size = backtrace(&tb[0], tb.size());
 #else
@@ -56,7 +55,7 @@ std::string Traceback::to_string (void)
 
     // resolve addresses into strings containing "filename(function+address)",
     // this array must be free()-ed
-    char ** symbollist = backtrace_symbols(addrlist, size);
+    char **symbollist = backtrace_symbols(addrlist, size);
     const char *prefix = "> ";
 
     // address of this function.
@@ -116,4 +115,11 @@ std::string Traceback::to_string (void)
     free(symbollist);
 
     return (sout);
+}
+
+void callstack_dump (void) 
+{
+    auto tb = new Traceback();
+    tb->init();
+    std::cerr << tb->to_string();
 }

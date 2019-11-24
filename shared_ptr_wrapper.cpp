@@ -1,5 +1,10 @@
+//
+// Copyright goblinhack@gmail.com
+//
 #include "shared_ptr_wrapper.h"
-#include "my_backtrace.h"
+#include "my_traceback.h"
+#define ENABLE_PTRCHECK
+#include "my_ptrcheck.h"
 
 typedef SmartPointerWrapper< class Foo > Foop;
 
@@ -15,8 +20,10 @@ public:
     Foop other;
     Foo(std::string data) : data(data) {
         debug("new");
+        newptr(this, to_string());
     }
     ~Foo() {
+        oldptr(this);
         debug("delete");
     }
     std::string to_string (void) {
@@ -40,8 +47,10 @@ public:
     Barp other;
     Bar(void) {
         debug("new");
+        newptr(this, to_string());
     }
     ~Bar() {
+        oldptr(this);
         debug("delete");
     }
     std::string to_string (void) {
@@ -75,9 +84,11 @@ int main (void)
     bar1->other.reset();
     bar2->other.reset();
 
+    std::cout << "\ncheck for leaks" << std::endl;
+    std::cout << "===============" << std::endl;
+
+    ptrcheck_leak_print();
+
     std::cout << "\nend of main, expect auto destruct" << std::endl;
     std::cout << "=================================" << std::endl;
-
-    auto tb = new Traceback();
-    std::cout << tb->to_string();
 }
