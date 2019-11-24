@@ -116,11 +116,11 @@ then
 fi
 
 log_info "Compiling"
-make $CORES $* all
+make $CORES $* all | sed 's/^/  /g'
 
 if [ $? -eq 0 ]
 then
-    log_info "Run ./bounds_check to start"
+    log_info "Run ./shared_ptr_wrapper to start"
 
     rm -f Makefile.bak
 else
