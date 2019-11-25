@@ -1,10 +1,11 @@
 //
 // Copyright goblinhack@gmail.com
 //
-#include "shared_ptr_wrapper.h"
-#include "my_traceback.h"
+#define DEBUG
 #define ENABLE_PTRCHECK
+#include "my_traceback.h"
 #include "my_ptrcheck.h"
+#include "shared_ptr_wrapper.h"
 
 typedef SmartPointerWrapper< class Foo > Foop;
 
@@ -57,7 +58,7 @@ public:
         auto address = static_cast<const void*>(this);
         std::stringstream ss;
         ss << address;  
-        return "Foo(" + ss.str() + ")";
+        return "Bar(" + ss.str() + ")";
     }
 };
 

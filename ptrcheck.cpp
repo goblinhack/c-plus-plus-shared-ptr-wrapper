@@ -77,7 +77,9 @@ public:
 std::string timestamp(void)
 {
     std::time_t result = std::time(nullptr);
-    return std::asctime(std::localtime(&result));
+    auto s = std::string(std::asctime(std::localtime(&result)));
+    s.pop_back();
+    return s;
 }
 
 static void die (void)
@@ -97,10 +99,10 @@ static void croak_ (const char *fmt, va_list args)
     }
     croaked = 1;
 
-    auto err = timestamp();
-    err += "PTRCHECK: FATAL ERROR: ";
+    auto err = "\n" + timestamp();
+    err += ": PTRCHECK: FATAL ERROR: ";
     err += string_sprintf(fmt, args);
-    std::cerr << err;
+    std::cerr << err << std::endl;
     croaked = true;
     die();
 }
@@ -117,9 +119,9 @@ void CROAK (const char *fmt, ...)
 static void error_ (const char *fmt, va_list args)
 {
     auto err = timestamp();
-    err += "PTRCHECK: ERROR: ";
+    err += ": PTRCHECK: ERROR: ";
     err += string_sprintf(fmt, args);
-    std::cerr << err;
+    std::cerr << err << std::endl;
 }
 
 void ERROR(const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
@@ -133,13 +135,13 @@ void ERROR (const char *fmt, ...)
 
 #define DIE(args...)                                           \
     std::cerr <<                                               \
-      string_sprintf("Died at %s:%s():%u",                     \
+      string_sprintf("Died at %s:%s() line %u",                \
                      __FILE__, __PRETTY_FUNCTION__, __LINE__); \
     CROAK(args);                                               \
 
 #define ERR(args...)                                           \
     std::cerr <<                                               \
-      string_sprintf("Error at %s:%s():%u",                    \
+      string_sprintf("Error at %s:%s() line %u",               \
                      __FILE__, __PRETTY_FUNCTION__, __LINE__); \
     ERROR(args);                                               \
 
@@ -340,7 +342,7 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
 
     if (!ptr) {
         callstack_dump();
-        DIE("%s%p NULL pointer %s:%s():%u", 
+        DIE("%s%p NULL pointer %s:%s() line %u", 
             null_pointer_warning, ptr, file.c_str(), func.c_str(), line);
     }
 
@@ -394,7 +396,7 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
     //
     callstack_dump();
 
-    ERR("%s%p %s:%s:%u", 
+    ERR("%s%p %s:%s line %u", 
         bad_pointer_warning, ptr, file.c_str(), func.c_str(), line);
 
     //
@@ -418,10 +420,12 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
         //
         if (pc->ptr == ptr) {
             auto a = pc->allocated_by;
+            auto ts = timestamp();
             if (a) {
                 std::cerr <<
                     string_sprintf(
-                        "PTRCHECK: Allocated \"%s\" (%u bytes) at %s:%s():%u at %s\n",
+                        "%s: PTRCHECK: Allocated \"%s\" (%u bytes) at %s:%s() line %u at %s\n",
+                        ts.c_str(),
                         pc->what.c_str(),
                         pc->size,
                         a->file.c_str(),
@@ -432,7 +436,8 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
             } else {
                 std::cerr <<
                     string_sprintf(
-                        "PTRCHECK: Never allocated \"%s\" (%u bytes)\n",
+                        "%s: PTRCHECK: Never allocated \"%s\" (%u bytes)\n",
+                        ts.c_str(),
                         pc->what.c_str(),
                         pc->size);
             }
@@ -441,7 +446,8 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
             if (f) {
                 std::cerr <<
                     string_sprintf(
-                        "PTRCHECK: Freed at %s:%s():%u at %s\n",
+                        "%s: PTRCHECK: Freed at %s:%s() line %u at %s\n",
+                        ts.c_str(),
                         f->file.c_str(),
                         f->func.c_str(),
                         f->line,
@@ -450,7 +456,8 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
             } else {
                 std::cerr <<
                     string_sprintf(
-                        "PTRCHECK: Never freed \"%s\" (%u bytes)\n",
+                        "%s: PTRCHECK: Never freed \"%s\" (%u bytes)\n",
+                        ts.c_str(),
                         pc->what.c_str(),
                         pc->size);
             }
@@ -468,7 +475,7 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
                 if (H) {
                     std::cerr <<
                         string_sprintf(
-                            "PTRCHECK: Last seen at [%u] at %s:%s():%u at %s\n",
+                            "PTRCHECK: Last seen at [%u] at %s:%s() line %u at %s\n",
                             i,
                             H->file.c_str(),
                             H->func.c_str(),
@@ -511,7 +518,9 @@ void *ptrcheck_alloc (const void *ptr,
     Ptrcheck *pc;
 
 #ifdef DEBUG_PTRCHECK
-    fprintf(stderr, "PTRCHECK: Alloc %p \"%s\" (%u bytes) at %s:%s():%u\n",
+    auto ts = timestamp();
+    fprintf(stderr, "%s: PTRCHECK: Alloc %p \"%s\" (%u bytes) at %s:%s() line %u\n",
+            ts.c_str(),
             ptr,
             what.c_str(),
             size,
@@ -592,7 +601,9 @@ int ptrcheck_free (void *ptr, std::string func, std::string file, int line)
     Ptrcheck *pc;
 
 #ifdef DEBUG_PTRCHECK
-    fprintf(stderr, "PTRCHECK: Free %p at %s:%s():%u\n",
+    auto ts = timestamp();
+    fprintf(stderr, "%s: PTRCHECK: Free %p at %s:%s() line %u\n",
+            ts.c_str(),
             ptr,
             file.c_str(),
             func.c_str(),
@@ -686,7 +697,7 @@ void ptrcheck_leak_print (void)
             if (a) {
                 std::cerr << 
                     string_sprintf(
-                    "PTRCHECK: Leak %p \"%s\" (%u bytes) at %s:%s():%u at %s\n",
+                    "PTRCHECK: Leak %p \"%s\" (%u bytes) at %s:%s() line %u at %s\n",
                     pc->ptr,
                     pc->what.c_str(),
                     pc->size,
@@ -714,7 +725,7 @@ void ptrcheck_leak_print (void)
                 auto H = pc->last_seen[h];
                 if (H) {
                     std::cerr << string_sprintf(
-                        "PTRCHECK: Last seen at [%u] at %s:%s():%u at %s\n",
+                        "PTRCHECK: Last seen at [%u] at %s:%s() line %u at %s\n",
                         j,
                         H->file.c_str(),
                         H->func.c_str(),

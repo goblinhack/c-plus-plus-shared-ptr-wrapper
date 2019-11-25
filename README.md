@@ -68,6 +68,155 @@ output (with some extra debugs):
     delete SmartPointerWrapper(0x7f9a29c029f8, ref to bar2)
 </pre>
 
+Checking for leaks
+==================
+
+If you want to go a bit further there are a few more headers you can include:
+
+<pre>
+    #define ENABLE_PTRCHECK
+    #include "my_traceback.h"
+    #include "my_ptrcheck.h"
+    #include "shared_ptr_wrapper.h"
+</pre>
+
+You will also need to include these in your build
+
+<pre>
+    ptrcheck.cpp
+    sprintf.cpp
+    traceback.cpp
+</pre>
+
+And then any pointer that you wish to track, use newptr on allocations and
+oldptr on deallocations. You can then call ptrcheck_leak_print to see what
+is currently still outstanding. Note I've only enabled this for single
+threading; should anyone want multithread, ask me; it's not hard to add.
+
+Example:
+
+<pre>
+#define DEBUG
+#define ENABLE_PTRCHECK
+#include "my_traceback.h"
+#include "my_ptrcheck.h"
+#include "shared_ptr_wrapper.h"
+
+typedef SmartPointerWrapper< class Foo > Foop;
+
+class Foo {
+private:
+    std::string data;
+    void debug (const std::string &what) {
+#ifdef DEBUG
+        std::cout << what << " " << to_string() << std::endl;
+#endif
+    }
+public:
+    Foop other;
+    Foo(std::string data) : data(data) {
+        debug("new");
+        newptr(this, to_string());
+    }
+    ~Foo() {
+        oldptr(this);
+        debug("delete");
+    }
+    std::string to_string (void) {
+        auto address = static_cast<const void*>(this);
+        std::stringstream ss;
+        ss << address;  
+        return "Foo(" + ss.str() + ", data=" + data + ")";
+    }
+};
+
+typedef SmartPointerWrapper< class Bar > Barp;
+
+class Bar {
+private:
+    void debug (const std::string &what) {
+#ifdef DEBUG
+        std::cout << what << " " << to_string() << std::endl;
+#endif
+    }
+public:
+    Barp other;
+    Bar(void) {
+        debug("new");
+        newptr(this, to_string());
+    }
+    ~Bar() {
+        oldptr(this);
+        debug("delete");
+    }
+    std::string to_string (void) {
+        auto address = static_cast<const void*>(this);
+        std::stringstream ss;
+        ss << address;  
+        return "Bar(" + ss.str() + ")";
+    }
+};
+
+int main (void)
+{
+    auto foo1 = SmartPointerWrapper< class Foo >(std::string("ref to foo1"), 
+                                                 std::string("foo1-data"));
+
+    std::cout << "\ncreate classes" << std::endl;
+    std::cout << "==============" << std::endl;
+    auto bar1 = SmartPointerWrapper< class Bar >(std::string("bar1"));
+    auto bar2 = SmartPointerWrapper< class Bar >(std::string("bar2"));
+
+    std::cout << "\ncreate reference loop" << std::endl;
+    std::cout << "=====================" << std::endl;
+    bar1->other = bar2;
+    bar1->other.rename(std::string("ref to bar2"));
+
+    bar2->other = bar1;
+    bar2->other.rename(std::string("ref to bar1"));
+
+    std::cout << "\nremove reference loop" << std::endl;
+    std::cout << "=====================" << std::endl;
+    bar1->other.reset();
+    bar2->other.reset();
+
+    std::cout << "\ncheck for leaks" << std::endl;
+    std::cout << "===============" << std::endl;
+
+    ptrcheck_leak_print();
+
+    std::cout << "\nend of main, expect auto destruct" << std::endl;
+    std::cout << "=================================" << std::endl;
+}
+</pre>
+
+<pre>
+    PTRCHECK: Leak 0x7f87d1d00018 "Foo(0x7f87d1d00018, data=foo1-data)" (64 bytes) at Foo::Foo(std::string):shared_ptr_wrapper.cpp() line 24 at Sun Nov 24 18:58:55 2019
+    stack trace:
+    > 1 ptrcheck_alloc(void const*, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int)
+    > 2 Foo::Foo(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >)
+    > 3 std::__1::shared_ptr<Foo> std::__1::shared_ptr<Foo>::make_shared<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >&>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >&&&)
+    > 4 SmartPointerWrapper<Foo>::SmartPointerWrapper<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >)
+    > 5   shared_ptr_wrapper                  0x000000010b99f1c2 main + 130
+    > 6   libdyld.dylib                       0x00007fff7b810015 start + 1
+    
+    PTRCHECK: Leak 0x7f87d1e00498 "Bar(0x7f87d1e00498)" (40 bytes) at Bar::Bar():shared_ptr_wrapper.cpp() line 51 at Sun Nov 24 18:58:55 2019
+    stack trace:
+    > 1 ptrcheck_alloc(void const*, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int)
+    > 2 Bar::Bar()
+    > 3 SmartPointerWrapper<Bar>::SmartPointerWrapper(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&)
+    > 4   shared_ptr_wrapper                  0x000000010b99f2fb main + 443
+    > 5   libdyld.dylib                       0x00007fff7b810015 start + 1
+    
+    PTRCHECK: Leak 0x7f87d1e00858 "Bar(0x7f87d1e00858)" (40 bytes) at Bar::Bar():shared_ptr_wrapper.cpp() line 51 at Sun Nov 24 18:58:55 2019
+    stack trace:
+    > 1 ptrcheck_alloc(void const*, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int)
+    > 2 Bar::Bar()
+    > 3 SmartPointerWrapper<Bar>::SmartPointerWrapper(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&)
+    > 4   shared_ptr_wrapper                  0x000000010b99f33e main + 510
+    > 5   libdyld.dylib                       0x00007fff7b810015 start + 1
+</pre>
+
 Building
 ========
 
