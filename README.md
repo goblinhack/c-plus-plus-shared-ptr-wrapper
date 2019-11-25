@@ -190,31 +190,34 @@ int main (void)
 }
 </pre>
 
+Output correctly catches that the objects are not yet released at the
+time we call ptrcheck_leak_print():
+
 <pre>
-    PTRCHECK: Leak 0x7f87d1d00018 "Foo(0x7f87d1d00018, data=foo1-data)" (64 bytes) at Foo::Foo(std::string):shared_ptr_wrapper.cpp() line 24 at Sun Nov 24 18:58:55 2019
-    stack trace:
-    > 1 ptrcheck_alloc(void const*, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int)
-    > 2 Foo::Foo(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >)
-    > 3 std::__1::shared_ptr<Foo> std::__1::shared_ptr<Foo>::make_shared<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >&>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >&&&)
-    > 4 SmartPointerWrapper<Foo>::SmartPointerWrapper<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >)
-    > 5   shared_ptr_wrapper                  0x000000010b99f1c2 main + 130
-    > 6   libdyld.dylib                       0x00007fff7b810015 start + 1
-    
-    PTRCHECK: Leak 0x7f87d1e00498 "Bar(0x7f87d1e00498)" (40 bytes) at Bar::Bar():shared_ptr_wrapper.cpp() line 51 at Sun Nov 24 18:58:55 2019
-    stack trace:
-    > 1 ptrcheck_alloc(void const*, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int)
-    > 2 Bar::Bar()
-    > 3 SmartPointerWrapper<Bar>::SmartPointerWrapper(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&)
-    > 4   shared_ptr_wrapper                  0x000000010b99f2fb main + 443
-    > 5   libdyld.dylib                       0x00007fff7b810015 start + 1
-    
-    PTRCHECK: Leak 0x7f87d1e00858 "Bar(0x7f87d1e00858)" (40 bytes) at Bar::Bar():shared_ptr_wrapper.cpp() line 51 at Sun Nov 24 18:58:55 2019
-    stack trace:
-    > 1 ptrcheck_alloc(void const*, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int)
-    > 2 Bar::Bar()
-    > 3 SmartPointerWrapper<Bar>::SmartPointerWrapper(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&)
-    > 4   shared_ptr_wrapper                  0x000000010b99f33e main + 510
-    > 5   libdyld.dylib                       0x00007fff7b810015 start + 1
+PTRCHECK: Leak 0x7f87d1d00018 "Foo(0x7f87d1d00018, data=foo1-data)" (64 bytes) at Foo::Foo(std::string):shared_ptr_wrapper.cpp() line 24 at Sun Nov 24 18:58:55 2019
+stack trace:
+> 1 ptrcheck_alloc(void const*, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int)
+> 2 Foo::Foo(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >)
+> 3 std::__1::shared_ptr<Foo> std::__1::shared_ptr<Foo>::make_shared<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >&>(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >&&&)
+> 4 SmartPointerWrapper<Foo>::SmartPointerWrapper<std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > >(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >)
+> 5   shared_ptr_wrapper                  0x000000010b99f1c2 main + 130
+> 6   libdyld.dylib                       0x00007fff7b810015 start + 1
+
+PTRCHECK: Leak 0x7f87d1e00498 "Bar(0x7f87d1e00498)" (40 bytes) at Bar::Bar():shared_ptr_wrapper.cpp() line 51 at Sun Nov 24 18:58:55 2019
+stack trace:
+> 1 ptrcheck_alloc(void const*, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int)
+> 2 Bar::Bar()
+> 3 SmartPointerWrapper<Bar>::SmartPointerWrapper(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&)
+> 4   shared_ptr_wrapper                  0x000000010b99f2fb main + 443
+> 5   libdyld.dylib                       0x00007fff7b810015 start + 1
+
+PTRCHECK: Leak 0x7f87d1e00858 "Bar(0x7f87d1e00858)" (40 bytes) at Bar::Bar():shared_ptr_wrapper.cpp() line 51 at Sun Nov 24 18:58:55 2019
+stack trace:
+> 1 ptrcheck_alloc(void const*, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> >, int)
+> 2 Bar::Bar()
+> 3 SmartPointerWrapper<Bar>::SmartPointerWrapper(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char> > const&)
+> 4   shared_ptr_wrapper                  0x000000010b99f33e main + 510
+> 5   libdyld.dylib                       0x00007fff7b810015 start + 1
 </pre>
 
 Building
