@@ -233,7 +233,10 @@ Or, if that fails, manual build:
 
 <pre>
     c++ -std=c++11 -Werror -g -ggdb3 -O2 -Wall -Wall -c -o .o/shared_ptr_wrapper.o shared_ptr_wrapper.cpp
-    c++ .o/shared_ptr_wrapper.o  -o shared_ptr_wrapper
+    c++ -std=c++11 -Werror -g -ggdb3 -O2 -Wall -Wall -c -o .o/traceback.o traceback.cpp
+    c++ -std=c++11 -Werror -g -ggdb3 -O2 -Wall -Wall -c -o .o/ptrcheck.o ptrcheck.cpp
+    c++ -std=c++11 -Werror -g -ggdb3 -O2 -Wall -Wall -c -o .o/sprintf.o sprintf.cpp
+    c++ .o/shared_ptr_wrapper.o .o/traceback.o .o/ptrcheck.o .o/sprintf.o  -o shared_ptr_wrapper
 </pre>
 
 To test:
