@@ -7,13 +7,7 @@
 #include <ctime>
 #include <iostream>
 
-//
-// How many times we've seen a given pointer and record a traceback at that
-// point.
-//
-#define MAX_PER_PTR_HISTORY 3
-
-#define DEBUG_PTRCHECK
+#define ENABLE_PTRCHECK_HISTORY 10
 
 //
 // A single event in the life of a pointer.
@@ -65,7 +59,7 @@ public:
     //
     Ptrcheck_history *allocated_by {};
     Ptrcheck_history *freed_by {};
-    std::array<Ptrcheck_history *, MAX_PER_PTR_HISTORY> last_seen;
+    std::array<Ptrcheck_history *, ENABLE_PTRCHECK_HISTORY> last_seen {};
 
     //
     // Where in the history buffer we are.
@@ -82,6 +76,7 @@ std::string timestamp(void)
     return s;
 }
 
+#ifndef DIE
 static void die (void)
 {
     std::cerr << "exit(1) error" << std::endl;
@@ -144,6 +139,8 @@ void ERROR (const char *fmt, ...)
       string_sprintf("Error at %s:%s() line %u",               \
                      __FILE__, __PRETTY_FUNCTION__, __LINE__); \
     ERROR(args);                                               \
+
+#endif
 
 //
 // A hash table so we can check pointers fast.
@@ -329,8 +326,8 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
                                           int line,
                                           int dont_store)
 {
-    static const char *bad_pointer_warning = "//BAD POINTER// ";
-    static const char *null_pointer_warning = "//NULL POINTER// ";
+    static const char *bad_pointer_warning = "**BAD POINTER** ";
+    static const char *null_pointer_warning = "**NULL POINTER** ";
     int ring_ptr_size;
     Ptrcheck *pc;
     hash_elem_t *e;
@@ -341,7 +338,6 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
     }
 
     if (!ptr) {
-        callstack_dump();
         DIE("%s%p NULL pointer %s:%s() line %u", 
             null_pointer_warning, ptr, file.c_str(), func.c_str(), line);
     }
@@ -380,12 +376,12 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
         pc->last_seen_at++;
         pc->last_seen_size++;
 
-        if (pc->last_seen_at >= MAX_PER_PTR_HISTORY) {
+        if (pc->last_seen_at >= ENABLE_PTRCHECK_HISTORY) {
             pc->last_seen_at = 0;
         }
 
-        if (pc->last_seen_size >= MAX_PER_PTR_HISTORY) {
-            pc->last_seen_size = MAX_PER_PTR_HISTORY;
+        if (pc->last_seen_size >= ENABLE_PTRCHECK_HISTORY) {
+            pc->last_seen_size = ENABLE_PTRCHECK_HISTORY;
         }
 
         return (pc);
@@ -394,8 +390,6 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
     //
     // We may be about to crash. Complain!
     //
-    callstack_dump();
-
     ERR("%s%p %s:%s line %u", 
         bad_pointer_warning, ptr, file.c_str(), func.c_str(), line);
 
@@ -411,6 +405,8 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
 
     ring_ptr_size = ringbuf_current_size;
 
+    printf("vvvvv Pointer history for %p vvvvv\n", ptr);
+
     //
     // Walk back through the ring buffer.
     //
@@ -424,8 +420,8 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
             if (a) {
                 std::cerr <<
                     string_sprintf(
-                        "%s: PTRCHECK: Allocated \"%s\" (%u bytes) at %s:%s() line %u at %s\n",
-                        ts.c_str(),
+                        "PTRCHECK: %p allocated at \"%s\" (%u bytes) at %s:%s() line %u at %s\n",
+                        ptr,
                         pc->what.c_str(),
                         pc->size,
                         a->file.c_str(),
@@ -433,33 +429,19 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
                         a->line,
                         a->ts.c_str());
                 std::cerr << a->tb->to_string() << std::endl;
-            } else {
-                std::cerr <<
-                    string_sprintf(
-                        "%s: PTRCHECK: Never allocated \"%s\" (%u bytes)\n",
-                        ts.c_str(),
-                        pc->what.c_str(),
-                        pc->size);
             }
 
             auto f = pc->freed_by;
             if (f) {
                 std::cerr <<
                     string_sprintf(
-                        "%s: PTRCHECK: Freed at %s:%s() line %u at %s\n",
-                        ts.c_str(),
+                        "PTRCHECK: %p freed at %s:%s() line %u at %s\n",
+                        ptr,
                         f->file.c_str(),
                         f->func.c_str(),
                         f->line,
                         f->ts.c_str());
                 std::cerr << f->tb->to_string() << std::endl;
-            } else {
-                std::cerr <<
-                    string_sprintf(
-                        "%s: PTRCHECK: Never freed \"%s\" (%u bytes)\n",
-                        ts.c_str(),
-                        pc->what.c_str(),
-                        pc->size);
             }
 
             //
@@ -468,14 +450,15 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
             int h = pc->last_seen_at;
             for (i=0; i < pc->last_seen_size; i++) {
                 if (--h < 0) {
-                    h = MAX_PER_PTR_HISTORY-1;
+                    h = ENABLE_PTRCHECK_HISTORY-1;
                 }
 
                 auto H = pc->last_seen[h];
                 if (H) {
                     std::cerr <<
                         string_sprintf(
-                            "PTRCHECK: Last seen at [%u] at %s:%s() line %u at %s\n",
+                            "PTRCHECK: %p last seen at [%u] at %s:%s() line %u at %s\n",
+                            ptr,
                             i,
                             H->file.c_str(),
                             H->func.c_str(),
@@ -503,9 +486,8 @@ static Ptrcheck *ptrcheck_verify_pointer (const void *ptr,
         }
     }
 
-    DIE("Fatal error");
-
-    return (0);
+    printf("^^^^^ End of pointer history for %p ^^^^^\n", ptr);
+    exit(1);
 }
 
 //
@@ -517,7 +499,7 @@ void *ptrcheck_alloc (const void *ptr,
 {
     Ptrcheck *pc;
 
-#ifdef DEBUG_PTRCHECK
+#ifdef ENABLE_PTRCHECK_DEBUG
     auto ts = timestamp();
     fprintf(stderr, "%s: PTRCHECK: Alloc %p \"%s\" (%u bytes) at %s:%s() line %u\n",
             ts.c_str(),
@@ -530,9 +512,7 @@ void *ptrcheck_alloc (const void *ptr,
 #endif
 
     if (!ptr) {
-        callstack_dump();
-
-        ERR("null pointer");
+        DIE("null pointer");
     }
 
     //
@@ -600,7 +580,7 @@ int ptrcheck_free (void *ptr, std::string func, std::string file, int line)
 {
     Ptrcheck *pc;
 
-#ifdef DEBUG_PTRCHECK
+#ifdef ENABLE_PTRCHECK_DEBUG
     auto ts = timestamp();
     fprintf(stderr, "%s: PTRCHECK: Free %p at %s:%s() line %u\n",
             ts.c_str(),
@@ -611,8 +591,7 @@ int ptrcheck_free (void *ptr, std::string func, std::string file, int line)
 #endif
 
     if (!ptr) {
-        callstack_dump();
-        ERR("null pointer");
+        DIE("null pointer");
         return (false);
     }
 
@@ -625,7 +604,7 @@ int ptrcheck_free (void *ptr, std::string func, std::string file, int line)
     // Add some free information that we know the pointer is safe at this
     // point in time.
     //
-    auto f = pc->allocated_by = new Ptrcheck_history();
+    auto f = pc->freed_by = new Ptrcheck_history();
     f->file = file;
     f->func = func;
     f->line = line;
@@ -665,7 +644,7 @@ int ptrcheck_verify (const void *ptr, std::string func, std::string file,
                      int line)
 {
     return (ptrcheck_verify_pointer(ptr, file, func, line,
-                                    true /* don't store */) != 0);
+                                    false /* don't store */) != 0);
 }
 
 //
@@ -719,7 +698,7 @@ void ptrcheck_leak_print (void)
             int h = pc->last_seen_at;
             for (auto j=0; j < pc->last_seen_size; j++) {
                 if (--h < 0) {
-                    h = MAX_PER_PTR_HISTORY-1;
+                    h = ENABLE_PTRCHECK_HISTORY-1;
                 }
 
                 auto H = pc->last_seen[h];
@@ -777,7 +756,7 @@ void ptrcheck_usage_cleanup (void)
                 delete (pc->freed_by);
             }
 
-            for (j=0; j < MAX_PER_PTR_HISTORY; j++) {
+            for (j=0; j < ENABLE_PTRCHECK_HISTORY; j++) {
                 if (pc->last_seen[j]) {
                     delete (pc->last_seen[j]);
                 }
