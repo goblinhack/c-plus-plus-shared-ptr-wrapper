@@ -4,7 +4,7 @@ Simple C++ 11 wrapper for std::shared_ptr
 Do you want to wrap shared_ptr so you can add data to help with debugging? - 
 of course you do! Example:
 
-<pre>
+```C++
 //
 // Create two classes that refer to each other. Once the references are
 // reset, the classes should be auto destructed.
@@ -34,7 +34,7 @@ int main (void)
     bar1->other.reset();
     bar2->other.reset();
 }
-</pre>
+```
 
 output (with some extra debugs):
 
@@ -73,12 +73,12 @@ Checking for leaks
 
 If you want to go a bit further there are a few more headers you can include:
 
-<pre>
+```C++
     #define ENABLE_PTRCHECK
     #include "my_traceback.h"
     #include "my_ptrcheck.h"
     #include "shared_ptr_wrapper.h"
-</pre>
+```
 
 You will also need to include these in your build
 
@@ -95,7 +95,7 @@ threading; should anyone want multithread, ask me; it's not hard to add.
 
 Example:
 
-<pre>
+```C++
 #define DEBUG
 #define ENABLE_PTRCHECK
 #include "my_traceback.h"
@@ -188,7 +188,7 @@ int main (void)
     std::cout << "\nend of main, expect auto destruct" << std::endl;
     std::cout << "=================================" << std::endl;
 }
-</pre>
+```
 
 Output correctly catches that the objects are not yet released at the
 time we call ptrcheck_leak_print():
